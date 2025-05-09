@@ -214,12 +214,19 @@
     function searchGoogle() {
       const query = document.getElementById('searchInput').value;
       if (query) {
-        window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+        window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
       }
     }
 
     // Automatically focus the search input when the page loads
     document.getElementById('searchInput').focus();
+
+    // Event listener for Enter key press to trigger search
+    document.getElementById('searchInput').addEventListener('keypress', function(event) {
+      if (event.key === 'Enter') {
+        searchGoogle();
+      }
+    });
   </script>
 </body>
 </html>
