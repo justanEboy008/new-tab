@@ -217,6 +217,9 @@
         window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
       }
     }
+
+    // Automatically focus the search input when the page loads
+    document.getElementById('searchInput').focus();
   </script>
 </body>
 </html>
