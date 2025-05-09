@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Game of Life</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+      background-color: #111;
+    }
+    #stopwatch {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      color: #00FFAA;
+      font-family: monospace;
+      font-size: 16px;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    #searchBoxCard {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      color: white;
+      z-index: 10;
+    }
+    #searchBoxCard input {
+      background: transparent;
+      border: 1px solid #00FFAA;
+      color: white;
+      font-size: 18px;
+      outline: none;
+      padding: 8px 12px;
+      width: 250px;
+      margin-right: 10px;
+      border-radius: 4px;
+    }
+    #searchBoxCard button {
+      background-color: #00FFAA;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #searchBoxCard button:hover {
+      background-color: #00cc88;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <div id="stopwatch">00:00</div>
+
+  <!-- Search Box Card -->
+  <div id="searchBoxCard">
+    <input type="text" id="searchInput" placeholder="Search Google..." />
+    <button onclick="searchGoogle()">Search</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const resolution = 10;
+    let cols, rows;
+    let grid;
+
+    function resizeCanvas() {
+      const prevCols = cols;
+      const prevRows = rows;
+      const prevGrid = grid;
+
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      cols = Math.floor(canvas.width / resolution);
+      rows = Math.floor(canvas.height / resolution);
+
+      const newGrid = buildEmptyGrid();
+
+      if (prevGrid) {
+        for (let col = 0; col < Math.min(cols, prevCols); col++) {
+          for (let row = 0; row < Math.min(rows, prevRows); row++) {
+            newGrid[col][row] = prevGrid[col][row];
+          }
+        }
+      } else {
+        for (let col = 0; col < cols; col++) {
+          for (let row = 0; row < rows; row++) {
+            newGrid[col][row] = Math.floor(Math.random() * 2);
+          }
+        }
+      }
+
+      grid = newGrid;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    function buildEmptyGrid() {
+      return new Array(cols).fill(null)
+        .map(() => new Array(rows).fill(0));
+    }
+
+    function randomizeGrid() {
+      const newGrid = buildEmptyGrid();
+      for (let col = 0; col < cols; col++) {
+        for (let row = 0; row < rows; row++) {
+          newGrid[col][row] = Math.floor(Math.random() * 2);
+        }
+      }
+      return newGrid;
+    }
+
+    function drawGrid(grid) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let col = 0; col < cols; col++) {
+        for (let row = 0; row < rows; row++) {
+          const cell = grid[col][row];
+          ctx.beginPath();
+          ctx.rect(col * resolution, row * resolution, resolution, resolution);
+          ctx.fillStyle = cell ? '#00FFAA' : '#111';
+          ctx.fill();
+        }
+      }
+    }
+
+    function nextGen(grid) {
+      const next = buildEmptyGrid();
+      let changed = false;
+
+      for (let col = 0; col < cols; col++) {
+        for (let row = 0; row < rows; row++) {
+          const cell = grid[col][row];
+          let neighbors = 0;
+
+          // Count the number of live neighbors
+          for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+              if (i === 0 && j === 0) continue; // Skip the current cell itself
+              const x = col + i;
+              const y = row + j;
+              if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                neighbors += grid[x][y];
+              }
+            }
+          }
+
+          // Apply the Game of Life rules
+          if (cell === 1) {
+            if (neighbors < 2 || neighbors > 3) {
+              next[col][row] = 0; // Death by isolation or overcrowding
+            } else {
+              next[col][row] = 1; // Survival
+            }
+          } else {
+            if (neighbors === 3) {
+              next[col][row] = 1; // Birth
+            }
+          }
+
+          if (next[col][row] !== cell) changed = true;
+        }
+      }
+
+      return { next, changed };
+    }
+
+    resizeCanvas();
+    function update() {
+      const result = nextGen(grid);
+      grid = result.next;
+      drawGrid(grid);
+
+      if (!result.changed) {
+        grid = randomizeGrid(); // Reset the grid if nothing is moving
+        startTime = Date.now(); // Reset stopwatch
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    grid = randomizeGrid();
+    drawGrid(grid);
+    requestAnimationFrame(update);
+
+    // Stopwatch logic
+    const stopwatch = document.getElementById('stopwatch');
+    let startTime = Date.now();
+
+    function updateStopwatch() {
+      const elapsed = Date.now() - startTime;
+      const minutes = String(Math.floor(elapsed / 60000)).padStart(2, '0');
+      const seconds = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, '0');
+      stopwatch.textContent = `${minutes}:${seconds}`;
+      setTimeout(updateStopwatch, 1000);
+    }
+
+    updateStopwatch();
+
+    // Search functionality
+    function searchGoogle() {
+      const query = document.getElementById('searchInput').value;
+      if (query) {
+        window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+      }
+    }
+  </script>
+</body>
+</html>
